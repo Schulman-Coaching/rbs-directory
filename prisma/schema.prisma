@@ -1,0 +1,511 @@
+// RBS Directory - Database Schema
+// Prisma schema for PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?   @map("password_hash")
+  role          UserRole  @default(PARENT)
+  emailVerified DateTime? @map("email_verified")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  profile       Profile?
+  provider      Provider?
+  bookings      Booking[]
+  favorites     Favorite[]
+  sentMessages  Message[]      @relation("SentMessages")
+  receivedMessages Message[]   @relation("ReceivedMessages")
+  subscription  UserSubscription?
+  notifications NotificationPreference?
+
+  @@map("users")
+}
+
+enum UserRole {
+  PARENT
+  PROVIDER
+  ADMIN
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  firstName   String   @map("first_name")
+  lastName    String   @map("last_name")
+  phone       String?
+  avatar      String?
+  location    String?  // Neighborhood in RBS (Aleph, Bet, Gimmel, etc.)
+  language    String   @default("he") // he, en
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model NotificationPreference {
+  id                String   @id @default(cuid())
+  userId            String   @unique @map("user_id")
+  emailNotifications Boolean @default(true) @map("email_notifications")
+  pushNotifications  Boolean @default(true) @map("push_notifications")
+  categoryAlerts    String[] @map("category_alerts") // Category IDs to receive alerts for
+  weeklyDigest      Boolean  @default(true) @map("weekly_digest")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+// ============================================
+// PROVIDER & BUSINESS
+// ============================================
+
+model Provider {
+  id                String            @id @default(cuid())
+  userId            String            @unique @map("user_id")
+  businessName      String            @map("business_name")
+  description       String?
+  shortDescription  String?           @map("short_description") @db.VarChar(200)
+  phone             String?
+  email             String?
+  website           String?
+  location          String?           // Address
+  neighborhood      String?           // RBS neighborhood
+  latitude          Float?
+  longitude         Float?
+  hours             Json?             // Operating hours
+  logo              String?
+  brandColor        String?           @map("brand_color")
+  subscriptionTier  ProviderTier      @default(FREE) @map("subscription_tier")
+  subscriptionExpiresAt DateTime?     @map("subscription_expires_at")
+  isVerified        Boolean           @default(false) @map("is_verified")
+  isActive          Boolean           @default(true) @map("is_active")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings          Listing[]
+  images            ProviderImage[]
+  subscription      ProviderSubscription?
+
+  @@map("providers")
+}
+
+enum ProviderTier {
+  FREE
+  STANDARD
+  PREMIUM
+}
+
+model ProviderImage {
+  id          String   @id @default(cuid())
+  providerId  String   @map("provider_id")
+  url         String
+  alt         String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_images")
+}
+
+model ProviderSubscription {
+  id                    String   @id @default(cuid())
+  providerId            String   @unique @map("provider_id")
+  stripeSubscriptionId  String?  @map("stripe_subscription_id")
+  stripeCustomerId      String?  @map("stripe_customer_id")
+  tier                  ProviderTier
+  status                SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart    DateTime @map("current_period_start")
+  currentPeriodEnd      DateTime @map("current_period_end")
+  cancelAtPeriodEnd     Boolean  @default(false) @map("cancel_at_period_end")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+}
+
+// ============================================
+// CATEGORIES
+// ============================================
+
+model Category {
+  id            String     @id @default(cuid())
+  name          String
+  nameHe        String     @map("name_he") // Hebrew name
+  slug          String     @unique
+  description   String?
+  icon          String?    // Icon name or URL
+  parentId      String?    @map("parent_id")
+  displayOrder  Int        @default(0) @map("display_order")
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  // Self-relation for subcategories
+  parent        Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children      Category[] @relation("CategoryHierarchy")
+  listings      Listing[]
+
+  @@map("categories")
+}
+
+// ============================================
+// LISTINGS
+// ============================================
+
+model Listing {
+  id              String        @id @default(cuid())
+  providerId      String        @map("provider_id")
+  categoryId      String        @map("category_id")
+  title           String
+  titleHe         String?       @map("title_he")
+  description     String
+  descriptionHe   String?       @map("description_he")
+  price           Decimal?      @db.Decimal(10, 2)
+  priceType       PriceType     @default(FIXED) @map("price_type")
+  currency        String        @default("ILS")
+  duration        Int?          // Duration in minutes
+  ageMin          Int?          @map("age_min")
+  ageMax          Int?          @map("age_max")
+  gender          Gender?       // Target gender
+  instructorGender Gender?      @map("instructor_gender")
+  language        String[]      @default(["he"]) // Languages offered
+  maxParticipants Int?          @map("max_participants")
+  location        String?
+  neighborhood    String?
+  isOnline        Boolean       @default(false) @map("is_online")
+  schedule        Json?         // Weekly schedule
+  subsidies       String[]      @default([]) // e.g., ["Meuchedet", "Clalit"]
+  status          ListingStatus @default(PENDING)
+  isFeatured      Boolean       @default(false) @map("is_featured")
+  featuredUntil   DateTime?     @map("featured_until")
+  viewCount       Int           @default(0) @map("view_count")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  provider        Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category        Category      @relation(fields: [categoryId], references: [id])
+  images          ListingImage[]
+  bookings        Booking[]
+  favorites       Favorite[]
+  messages        Message[]
+  references      Reference[]
+  schools         ListingSchool[]
+
+  @@index([categoryId])
+  @@index([providerId])
+  @@index([status])
+  @@map("listings")
+}
+
+enum PriceType {
+  FIXED
+  HOURLY
+  PER_SESSION
+  MONTHLY
+  CONTACT
+  FREE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  ALL
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  ARCHIVED
+  REJECTED
+}
+
+model ListingImage {
+  id        String   @id @default(cuid())
+  listingId String   @map("listing_id")
+  url       String
+  alt       String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("listing_images")
+}
+
+// School visibility restrictions for premium providers
+model ListingSchool {
+  id        String   @id @default(cuid())
+  listingId String   @map("listing_id")
+  schoolId  String   @map("school_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  school  School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, schoolId])
+  @@map("listing_schools")
+}
+
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  nameHe    String   @map("name_he")
+  type      String?  // Elementary, Middle, High
+  neighborhood String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listings  ListingSchool[]
+
+  @@map("schools")
+}
+
+// ============================================
+// BOOKINGS
+// ============================================
+
+model Booking {
+  id              String        @id @default(cuid())
+  listingId       String        @map("listing_id")
+  userId          String        @map("user_id")
+  date            DateTime
+  time            String?       // Time slot
+  status          BookingStatus @default(PENDING)
+  participants    Int           @default(1)
+  notes           String?
+  totalAmount     Decimal?      @db.Decimal(10, 2) @map("total_amount")
+  convenienceFee  Decimal?      @db.Decimal(10, 2) @map("convenience_fee")
+  paymentStatus   PaymentStatus @default(PENDING) @map("payment_status")
+  paymentIntentId String?       @map("payment_intent_id")
+  confirmedAt     DateTime?     @map("confirmed_at")
+  canceledAt      DateTime?     @map("canceled_at")
+  cancelReason    String?       @map("cancel_reason")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  listing         Listing       @relation(fields: [listingId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+  liabilityForm   LiabilityForm?
+
+  @@index([userId])
+  @@index([listingId])
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  COMPLETED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+model LiabilityForm {
+  id          String   @id @default(cuid())
+  bookingId   String   @unique @map("booking_id")
+  signedAt    DateTime @map("signed_at")
+  signature   String   // Base64 signature or signature URL
+  formVersion String   @map("form_version")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("liability_forms")
+}
+
+// ============================================
+// MESSAGING
+// ============================================
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String   @map("sender_id")
+  recipientId String   @map("recipient_id")
+  listingId   String?  @map("listing_id") // Optional context
+  content     String
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+  recipient User     @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  listing   Listing? @relation(fields: [listingId], references: [id])
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@map("messages")
+}
+
+// ============================================
+// FAVORITES & REFERENCES
+// ============================================
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  listingId String   @map("listing_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@map("favorites")
+}
+
+// Reference system (not public reviews)
+model Reference {
+  id        String   @id @default(cuid())
+  listingId String   @map("listing_id")
+  name      String   // Reference person name
+  phone     String?
+  email     String?
+  notes     String?  // Internal notes
+  isWillingToBeContacted Boolean @default(true) @map("is_willing_to_be_contacted")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("references")
+}
+
+// ============================================
+// USER SUBSCRIPTIONS (Parent Premium)
+// ============================================
+
+model UserSubscription {
+  id                    String   @id @default(cuid())
+  userId                String   @unique @map("user_id")
+  stripeSubscriptionId  String?  @map("stripe_subscription_id")
+  stripeCustomerId      String?  @map("stripe_customer_id")
+  tier                  UserTier @default(FREE)
+  status                SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart    DateTime @map("current_period_start")
+  currentPeriodEnd      DateTime @map("current_period_end")
+  cancelAtPeriodEnd     Boolean  @default(false) @map("cancel_at_period_end")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_subscriptions")
+}
+
+enum UserTier {
+  FREE
+  PREMIUM
+}
+
+// ============================================
+// COMMUNITY FEATURES
+// ============================================
+
+model CommunityPost {
+  id          String   @id @default(cuid())
+  categoryId  String   @map("category_id")
+  authorId    String   @map("author_id")
+  title       String
+  content     String
+  isPinned    Boolean  @default(false) @map("is_pinned")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([categoryId])
+  @@map("community_posts")
+}
+
+// ============================================
+// ANALYTICS & TRACKING
+// ============================================
+
+model ListingView {
+  id        String   @id @default(cuid())
+  listingId String   @map("listing_id")
+  userId    String?  @map("user_id") // Optional for anonymous views
+  viewedAt  DateTime @default(now()) @map("viewed_at")
+
+  @@index([listingId])
+  @@index([viewedAt])
+  @@map("listing_views")
+}
+
+model SearchQuery {
+  id          String   @id @default(cuid())
+  userId      String?  @map("user_id")
+  query       String
+  filters     Json?
+  resultCount Int      @map("result_count")
+  searchedAt  DateTime @default(now()) @map("searched_at")
+
+  @@index([searchedAt])
+  @@map("search_queries")
+}
+
+// ============================================
+// PROMOTIONS & DEALS
+// ============================================
+
+model Promotion {
+  id          String   @id @default(cuid())
+  providerId  String   @map("provider_id")
+  title       String
+  description String
+  discountType DiscountType @map("discount_type")
+  discountValue Decimal @db.Decimal(10, 2) @map("discount_value")
+  minPurchase Decimal? @db.Decimal(10, 2) @map("min_purchase")
+  code        String?  @unique
+  startsAt    DateTime @map("starts_at")
+  endsAt      DateTime @map("ends_at")
+  isActive    Boolean  @default(true) @map("is_active")
+  usageLimit  Int?     @map("usage_limit")
+  usageCount  Int      @default(0) @map("usage_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("promotions")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
