@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { useRouter } from '@/i18n/routing'
 import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -17,13 +18,14 @@ interface SearchBarProps {
 
 export function SearchBar({
   defaultValue = '',
-  placeholder = 'חפש חוגים, שירותים, עסקים...',
+  placeholder,
   size = 'default',
   className,
   onSearch
 }: SearchBarProps) {
   const [query, setQuery] = useState(defaultValue)
   const router = useRouter()
+  const t = useTranslations('home')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,18 +46,18 @@ export function SearchBar({
   return (
     <form onSubmit={handleSubmit} className={cn('relative', className)}>
       <Search className={cn(
-        'absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground',
+        'absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3',
         size === 'lg' ? 'h-5 w-5' : 'h-4 w-4'
       )} />
       <Input
         type="search"
-        placeholder={placeholder}
+        placeholder={placeholder || t('searchPlaceholder')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className={cn(
-          'pr-10',
-          size === 'lg' && 'h-14 text-lg pr-12',
-          query && 'pl-10'
+          'rtl:pr-10 ltr:pl-10',
+          size === 'lg' && 'h-14 text-lg rtl:pr-12 ltr:pl-12',
+          query && 'rtl:pl-10 ltr:pr-10'
         )}
       />
       {query && (
@@ -64,7 +66,7 @@ export function SearchBar({
           variant="ghost"
           size="icon"
           className={cn(
-            'absolute left-1 top-1/2 -translate-y-1/2',
+            'absolute top-1/2 -translate-y-1/2 rtl:left-1 ltr:right-1',
             size === 'lg' ? 'h-10 w-10' : 'h-8 w-8'
           )}
           onClick={handleClear}

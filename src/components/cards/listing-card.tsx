@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import Image from 'next/image'
+import { useLocale, useTranslations } from 'next-intl'
+import { Link } from '@/i18n/routing'
 import { Heart, MapPin, Clock, Users } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +18,12 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing, provider, showProvider = true, className }: ListingCardProps) {
+  const locale = useLocale()
+  const t = useTranslations('common')
   const imageUrl = listing.images?.[0]?.url || 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800'
+
+  // Use Hebrew title for Hebrew locale, English otherwise
+  const title = locale === 'he' ? (listing.titleHe || listing.title) : listing.title
 
   return (
     <Card className={cn('group overflow-hidden hover:shadow-lg transition-shadow', className)}>
@@ -25,13 +31,13 @@ export function ListingCard({ listing, provider, showProvider = true, className 
         <div className="relative aspect-[4/3] overflow-hidden">
           <Image
             src={imageUrl}
-            alt={listing.titleHe || listing.title}
+            alt={title}
             fill
             className="object-cover transition-transform group-hover:scale-105"
           />
           {listing.isFeatured && (
             <Badge className="absolute top-2 right-2 bg-amber-500 hover:bg-amber-600">
-              מומלץ
+              {t('featured')}
             </Badge>
           )}
           <Button
@@ -51,7 +57,7 @@ export function ListingCard({ listing, provider, showProvider = true, className 
       <CardContent className="p-4">
         <Link href={`/listings/${listing.id}`}>
           <h3 className="font-semibold text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-            {listing.titleHe || listing.title}
+            {title}
           </h3>
         </Link>
 
@@ -80,7 +86,7 @@ export function ListingCard({ listing, provider, showProvider = true, className 
           {listing.duration && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>{listing.duration} דק׳</span>
+              <span>{listing.duration} {t('duration')}</span>
             </div>
           )}
         </div>
@@ -90,22 +96,22 @@ export function ListingCard({ listing, provider, showProvider = true, className 
             {listing.price !== undefined && listing.priceType !== 'FREE' && listing.priceType !== 'CONTACT' ? (
               <div className="font-bold text-primary">
                 {formatPrice(listing.price)}
-                <span className="text-xs font-normal text-muted-foreground mr-1">
-                  {listing.priceType === 'MONTHLY' && '/חודש'}
-                  {listing.priceType === 'HOURLY' && '/שעה'}
-                  {listing.priceType === 'PER_SESSION' && '/שיעור'}
+                <span className="text-xs font-normal text-muted-foreground ltr:ml-1 rtl:mr-1">
+                  {listing.priceType === 'MONTHLY' && `/${t('perMonth')}`}
+                  {listing.priceType === 'HOURLY' && `/${t('perHour')}`}
+                  {listing.priceType === 'PER_SESSION' && `/${t('perSession')}`}
                 </span>
               </div>
             ) : listing.priceType === 'FREE' ? (
-              <Badge variant="secondary">חינם</Badge>
+              <Badge variant="secondary">{t('free')}</Badge>
             ) : (
-              <span className="text-sm text-muted-foreground">צרו קשר</span>
+              <span className="text-sm text-muted-foreground">{t('contactForPrice')}</span>
             )}
           </div>
 
           {listing.subsidies && listing.subsidies.length > 0 && (
             <Badge variant="outline" className="text-xs">
-              סבסוד {listing.subsidies[0]}
+              {listing.subsidies[0]}
             </Badge>
           )}
         </div>

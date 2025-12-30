@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
+import { Link } from '@/i18n/routing'
 import { ArrowLeft, Star, TrendingUp, Sparkles } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { MobileNav } from '@/components/layout/mobile-nav'
@@ -15,7 +16,11 @@ import {
   getProviderById
 } from '@/lib/mock-data'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getTranslations('home')
+  const tNav = await getTranslations('nav')
+  const tCommon = await getTranslations('common')
+
   const featuredCategories = getFeaturedCategories()
   const featuredListings = getFeaturedListings().slice(0, 4)
   const popularListings = getPopularListings(6)
@@ -30,32 +35,32 @@ export default function HomePage() {
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
             <Badge variant="secondary" className="mb-4">
-              <Sparkles className="h-3 w-3 ml-1" />
-              הפלטפורמה החדשה של רמת בית שמש
+              <Sparkles className="h-3 w-3 ltr:mr-1 rtl:ml-1" />
+              RBS Community Directory
             </Badge>
             <h1 className="text-3xl lg:text-5xl font-bold mb-4">
-              כל החוגים, העסקים והשירותים
+              {t('hero')}
               <br />
-              <span className="text-primary">במקום אחד</span>
+              <span className="text-primary">{t('heroSubtitle')}</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              מצאו את החוג המושלם לילדים, שירותים לשמחות, בעלי מקצוע ועוד - הכל ברמת בית שמש
+              {t('searchPlaceholder')}
             </p>
             <div className="max-w-xl mx-auto">
-              <SearchBar size="lg" placeholder="מה אתם מחפשים?" />
+              <SearchBar size="lg" placeholder={t('searchPlaceholder')} />
             </div>
             <div className="flex flex-wrap justify-center gap-2 mt-4">
               <Link href="/categories/kids-teens">
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">חוגים לילדים</Badge>
+                <Badge variant="outline" className="cursor-pointer hover:bg-accent">{tNav('kidsAndTeens')}</Badge>
               </Link>
               <Link href="/categories/simcha">
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">שירותי שמחות</Badge>
+                <Badge variant="outline" className="cursor-pointer hover:bg-accent">{tNav('celebrations')}</Badge>
               </Link>
               <Link href="/categories/health-wellness">
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">בריאות</Badge>
+                <Badge variant="outline" className="cursor-pointer hover:bg-accent">{tNav('health')}</Badge>
               </Link>
-              <Link href="/categories/home-improvement">
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">שיפוצים</Badge>
+              <Link href="/categories/stores-businesses">
+                <Badge variant="outline" className="cursor-pointer hover:bg-accent">{tNav('business')}</Badge>
               </Link>
             </div>
           </div>
@@ -66,11 +71,11 @@ export default function HomePage() {
       <section className="py-12">
         <div className="container">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">קטגוריות מובילות</h2>
+            <h2 className="text-2xl font-bold">{t('popularCategories')}</h2>
             <Button variant="ghost" asChild>
               <Link href="/categories">
-                כל הקטגוריות
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                {tCommon('viewAll')}
+                <ArrowLeft className="h-4 w-4 ltr:ml-2 rtl:mr-2 ltr:rotate-180" />
               </Link>
             </Button>
           </div>
@@ -92,12 +97,12 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5 text-amber-500" />
-              <h2 className="text-2xl font-bold">מומלצים</h2>
+              <h2 className="text-2xl font-bold">{t('featuredListings')}</h2>
             </div>
             <Button variant="ghost" asChild>
               <Link href="/search?featured=true">
-                הכל
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                {tCommon('viewAll')}
+                <ArrowLeft className="h-4 w-4 ltr:ml-2 rtl:mr-2 ltr:rotate-180" />
               </Link>
             </Button>
           </div>
@@ -113,45 +118,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Popular Listings */}
+      {/* New This Week */}
       <section className="py-12">
         <div className="container">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h2 className="text-2xl font-bold">הכי פופולריים</h2>
-            </div>
-            <Button variant="ghost" asChild>
-              <Link href="/search?sort=popular">
-                הכל
-                <ArrowLeft className="h-4 w-4 mr-2" />
-              </Link>
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {popularListings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                provider={getProviderById(listing.providerId)}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* New This Week */}
-      <section className="py-12 bg-muted/50">
-        <div className="container">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-green-500" />
-              <h2 className="text-2xl font-bold">חדש השבוע</h2>
+              <h2 className="text-2xl font-bold">{t('newListings')}</h2>
             </div>
             <Button variant="ghost" asChild>
               <Link href="/search?sort=newest">
-                הכל
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                {tCommon('viewAll')}
+                <ArrowLeft className="h-4 w-4 ltr:ml-2 rtl:mr-2 ltr:rotate-180" />
               </Link>
             </Button>
           </div>
@@ -172,14 +150,14 @@ export default function HomePage() {
         <div className="container">
           <div className="bg-primary rounded-2xl p-8 lg:p-12 text-center text-primary-foreground">
             <h2 className="text-2xl lg:text-3xl font-bold mb-4">
-              יש לכם עסק או חוג?
+              {t('forProviders')}
             </h2>
             <p className="text-lg opacity-90 mb-6 max-w-2xl mx-auto">
-              הצטרפו למדריך רמב״ש והגיעו לאלפי משפחות. רישום בחינם, שליטה מלאה על הפרופיל שלכם.
+              {t('joinUs')}
             </p>
             <Button size="lg" variant="secondary" asChild>
               <Link href="/register?type=provider">
-                הצטרפו עכשיו - חינם
+                {t('addListing')}
               </Link>
             </Button>
           </div>

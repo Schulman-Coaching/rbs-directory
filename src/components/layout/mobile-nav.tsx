@@ -1,20 +1,22 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { Link, usePathname } from '@/i18n/routing'
 import { Home, Search, Grid3X3, Heart, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const navItems = [
-  { href: '/', icon: Home, label: 'בית' },
-  { href: '/search', icon: Search, label: 'חיפוש' },
-  { href: '/categories', icon: Grid3X3, label: 'קטגוריות' },
-  { href: '/account/favorites', icon: Heart, label: 'מועדפים' },
-  { href: '/account', icon: User, label: 'חשבון' },
-]
-
 export function MobileNav() {
   const pathname = usePathname()
+  const t = useTranslations('common')
+  const tNav = useTranslations('nav')
+
+  const navItems = [
+    { href: '/', icon: Home, label: t('home') },
+    { href: '/search', icon: Search, label: t('search') },
+    { href: '/categories', icon: Grid3X3, label: t('viewAll') },
+    { href: '/account/favorites', icon: Heart, label: tNav('favorites') },
+    { href: '/account', icon: User, label: tNav('myAccount') },
+  ]
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t pb-safe">

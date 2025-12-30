@@ -1,6 +1,7 @@
 'use client'
 
-import Link from 'next/link'
+import { useLocale } from 'next-intl'
+import { Link } from '@/i18n/routing'
 import {
   Phone, Clock, Heart, Calendar, Percent, Newspaper, Users,
   BookOpen, Sparkles, Wrench, PartyPopper, Home, Store, RefreshCw,
@@ -48,7 +49,11 @@ export function CategoryCard({
   variant = 'default',
   className
 }: CategoryCardProps) {
+  const locale = useLocale()
   const IconComponent = category.icon ? iconMap[category.icon] || Users : Users
+
+  // Use Hebrew name for Hebrew locale, English otherwise
+  const displayName = locale === 'he' ? category.nameHe : category.name
 
   if (variant === 'compact') {
     return (
@@ -61,9 +66,9 @@ export function CategoryCard({
             <IconComponent className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium truncate">{category.nameHe}</h3>
+            <h3 className="font-medium truncate">{displayName}</h3>
             {listingsCount !== undefined && (
-              <p className="text-xs text-muted-foreground">{listingsCount} פריטים</p>
+              <p className="text-xs text-muted-foreground">{listingsCount} items</p>
             )}
           </div>
         </div>
@@ -82,10 +87,12 @@ export function CategoryCard({
             <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
               <IconComponent className="h-8 w-8 text-primary" />
             </div>
-            <h3 className="font-semibold text-lg mb-1">{category.nameHe}</h3>
-            <p className="text-sm text-muted-foreground">{category.name}</p>
+            <h3 className="font-semibold text-lg mb-1">{displayName}</h3>
+            <p className="text-sm text-muted-foreground">
+              {locale === 'he' ? category.name : category.nameHe}
+            </p>
             {listingsCount !== undefined && (
-              <p className="text-xs text-muted-foreground mt-2">{listingsCount} פריטים</p>
+              <p className="text-xs text-muted-foreground mt-2">{listingsCount} items</p>
             )}
           </CardContent>
         </Card>
@@ -106,7 +113,7 @@ export function CategoryCard({
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-medium truncate group-hover:text-primary transition-colors">
-              {category.nameHe}
+              {displayName}
             </h3>
             {category.description && (
               <p className="text-sm text-muted-foreground truncate">{category.description}</p>
