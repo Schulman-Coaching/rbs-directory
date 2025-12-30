@@ -2,6 +2,7 @@
 export * from './categories'
 export * from './providers'
 export * from './listings'
+export * from './whatsapp-imports'
 
 // Re-export commonly used functions
 import { categories, getFeaturedCategories, getMainCategories, getCategoryBySlug, getSubcategories } from './categories'

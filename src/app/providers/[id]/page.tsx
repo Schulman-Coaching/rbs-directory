@@ -16,6 +16,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { getInitials } from '@/lib/utils'
 import { getProviderById, getListingsByProvider } from '@/lib/mock-data'
+import { getProviderStats, getEntitiesByProvider } from '@/lib/mock-data/whatsapp-imports'
+import { CommunityBadge } from '@/components/listings/community-badge'
+import { CommunityMentions } from '@/components/listings/community-mentions'
 
 const dayNames: Record<string, string> = {
   sunday: 'ראשון',
@@ -48,6 +51,8 @@ export default function ProviderPage() {
   }
 
   const listings = getListingsByProvider(provider.id)
+  const communityStats = getProviderStats(provider.id)
+  const communityMentions = getEntitiesByProvider(provider.id)
 
   return (
     <div className="min-h-screen pb-20 lg:pb-0">
@@ -99,6 +104,16 @@ export default function ProviderPage() {
                   </Badge>
                 )}
               </div>
+
+              {/* Community Badge */}
+              {communityStats.totalMentions > 0 && (
+                <CommunityBadge
+                  stats={communityStats}
+                  providerId={provider.id}
+                  showLink={false}
+                  className="mt-3"
+                />
+              )}
             </div>
 
             <div className="flex gap-2 w-full md:w-auto">
@@ -151,6 +166,15 @@ export default function ProviderPage() {
                 </div>
               )}
             </section>
+
+            {/* Community Mentions */}
+            {communityStats.totalMentions > 0 && (
+              <CommunityMentions
+                stats={communityStats}
+                recentMentions={communityMentions}
+                providerId={provider.id}
+              />
+            )}
           </div>
 
           {/* Sidebar */}

@@ -509,3 +509,101 @@ enum DiscountType {
   PERCENTAGE
   FIXED_AMOUNT
 }
+
+// ============================================
+// WHATSAPP IMPORTS & COMMUNITY INSIGHTS
+// ============================================
+
+model WhatsAppImport {
+  id                     String       @id @default(cuid())
+  fileName               String       @map("file_name")
+  fileSize               Int          @map("file_size")
+  uploadedById           String       @map("uploaded_by_id")
+  status                 ImportStatus @default(PENDING)
+  messageCount           Int          @default(0) @map("message_count")
+  extractedEntitiesCount Int          @default(0) @map("extracted_entities_count")
+  dateRangeStart         DateTime?    @map("date_range_start")
+  dateRangeEnd           DateTime?    @map("date_range_end")
+  groupName              String?      @map("group_name")
+  processingError        String?      @map("processing_error")
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+
+  messages          WhatsAppMessage[]
+  extractedEntities ExtractedEntity[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("whatsapp_imports")
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model WhatsAppMessage {
+  id              String    @id @default(cuid())
+  importId        String    @map("import_id")
+  timestamp       DateTime
+  senderName      String    @map("sender_name")
+  senderPhone     String?   @map("sender_phone")
+  content         String
+  isSystemMessage Boolean   @default(false) @map("is_system_message")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  import            WhatsAppImport    @relation(fields: [importId], references: [id], onDelete: Cascade)
+  extractedEntities ExtractedEntity[]
+
+  @@index([importId])
+  @@index([timestamp])
+  @@map("whatsapp_messages")
+}
+
+model ExtractedEntity {
+  id             String         @id @default(cuid())
+  importId       String         @map("import_id")
+  messageId      String         @map("message_id")
+  entityType     EntityType     @map("entity_type")
+  providerId     String?        @map("provider_id")
+  listingId      String?        @map("listing_id")
+  rawText        String         @map("raw_text")
+  extractedData  Json           @map("extracted_data")
+  confidence     Float          @default(0)
+  sentiment      SentimentType?
+  approvalStatus ApprovalStatus @default(PENDING) @map("approval_status")
+  reviewedById   String?        @map("reviewed_by_id")
+  reviewedAt     DateTime?      @map("reviewed_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  import  WhatsAppImport  @relation(fields: [importId], references: [id], onDelete: Cascade)
+  message WhatsAppMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([importId])
+  @@index([providerId])
+  @@index([entityType])
+  @@index([approvalStatus])
+  @@map("extracted_entities")
+}
+
+enum EntityType {
+  PROVIDER_MENTION
+  CONTACT_INFO
+  PRICING
+  SERVICE_REQUEST
+  RECOMMENDATION
+}
+
+enum SentimentType {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

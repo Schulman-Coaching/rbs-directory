@@ -24,6 +24,8 @@ import {
   getListingsByCategory,
   getFlatCategories
 } from '@/lib/mock-data'
+import { getProviderStats } from '@/lib/mock-data/whatsapp-imports'
+import { CommunityBadge } from '@/components/listings/community-badge'
 
 const dayNames: Record<string, string> = {
   sunday: 'ראשון',
@@ -62,6 +64,7 @@ export default function ListingPage() {
   const relatedListings = getListingsByCategory(listing.categoryId)
     .filter(l => l.id !== listing.id)
     .slice(0, 4)
+  const communityStats = provider ? getProviderStats(provider.id) : null
 
   const images = listing.images?.length
     ? listing.images
@@ -182,6 +185,15 @@ export default function ListingPage() {
                   </div>
                 )}
               </div>
+
+              {/* Community Badge */}
+              {communityStats && communityStats.totalMentions > 0 && provider && (
+                <CommunityBadge
+                  stats={communityStats}
+                  providerId={provider.id}
+                  className="mt-4"
+                />
+              )}
             </div>
 
             <Separator />

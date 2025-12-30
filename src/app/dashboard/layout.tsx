@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ListPlus, MessageCircle, Settings,
-  ChevronLeft, Menu, Bell, User
+  ChevronLeft, Menu, Bell, User, Upload, Users, Target,
+  MessageSquare, Shield
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
@@ -12,12 +13,24 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
-const sidebarItems = [
+// For demo, we assume the user is an admin
+const isAdmin = true
+
+const providerItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'סקירה כללית' },
   { href: '/dashboard/listings', icon: ListPlus, label: 'השירותים שלי' },
+  { href: '/dashboard/mentions', icon: MessageSquare, label: 'אזכורים', badge: 12 },
+  { href: '/dashboard/leads', icon: Target, label: 'לידים', badge: 5 },
   { href: '/dashboard/messages', icon: MessageCircle, label: 'הודעות', badge: 3 },
   { href: '/dashboard/settings', icon: Settings, label: 'הגדרות' },
 ]
+
+const adminItems = [
+  { href: '/dashboard/admin/imports', icon: Upload, label: 'ייבוא וואטסאפ' },
+  { href: '/dashboard/admin/insights', icon: Users, label: 'תובנות קהילתיות' },
+]
+
+const sidebarItems = providerItems
 
 function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
@@ -66,6 +79,39 @@ function Sidebar({ className }: { className?: string }) {
             </Link>
           )
         })}
+
+        {/* Admin Section */}
+        {isAdmin && (
+          <>
+            <div className="pt-4 pb-2">
+              <div className="flex items-center gap-2 px-3 text-xs text-muted-foreground uppercase tracking-wider">
+                <Shield className="h-3 w-3" />
+                ניהול
+              </div>
+            </div>
+            {adminItems.map((item) => {
+              const isActive = pathname.startsWith(item.href)
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center justify-between px-3 py-2 rounded-lg transition-colors',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted'
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </div>
+                </Link>
+              )
+            })}
+          </>
+        )}
       </nav>
 
       {/* User Info */}

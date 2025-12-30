@@ -384,3 +384,9 @@ export const SUBSIDIES = [
 ] as const;
 
 export type Subsidy = typeof SUBSIDIES[number];
+
+// ============================================
+// WHATSAPP IMPORT TYPES
+// ============================================
+
+export * from './whatsapp';
