@@ -213,6 +213,17 @@ model Listing {
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
+  // Ingestion pipeline fields
+  sourceType      SourceType    @default(MANUAL) @map("source_type")
+  sourceId        String?       @map("source_id")    // External ID from import source
+  sourceUrl       String?       @map("source_url")   // Google Sheet URL, etc.
+  lastSyncedAt    DateTime?     @map("last_synced_at")
+  syncEnabled     Boolean       @default(false) @map("sync_enabled")
+  reviewNotes     String?       @map("review_notes") // Admin notes during review
+  submittedAt     DateTime?     @map("submitted_at")
+  reviewedAt      DateTime?     @map("reviewed_at")
+  reviewedBy      String?       @map("reviewed_by")  // Admin user ID
+
   // Relations
   provider        Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
   category        Category      @relation(fields: [categoryId], references: [id])
@@ -226,6 +237,8 @@ model Listing {
   @@index([categoryId])
   @@index([providerId])
   @@index([status])
+  @@index([sourceType])
+  @@index([submittedAt])
   @@map("listings")
 }
 
@@ -250,6 +263,13 @@ enum ListingStatus {
   ACTIVE
   ARCHIVED
   REJECTED
+}
+
+enum SourceType {
+  MANUAL        // Provider self-entry
+  CSV_IMPORT    // Admin CSV upload
+  GOOGLE_SHEETS // Synced from Google Sheets
+  WHATSAPP      // Extracted from WhatsApp
 }
 
 model ListingImage {
@@ -508,6 +528,60 @@ model Promotion {
 enum DiscountType {
   PERCENTAGE
   FIXED_AMOUNT
+}
+
+// ============================================
+// SYNC SOURCES (Data Ingestion)
+// ============================================
+
+model SyncSource {
+  id              String       @id @default(cuid())
+  name            String
+  sourceType      SourceType   @map("source_type")
+  sourceUrl       String       @map("source_url")  // Google Sheet URL, API endpoint, etc.
+  columnMapping   Json?        @map("column_mapping") // Maps source columns to listing fields
+  syncSchedule    String?      @map("sync_schedule") // Cron expression
+  lastSyncedAt    DateTime?    @map("last_synced_at")
+  lastSyncStatus  SyncStatus   @default(PENDING) @map("last_sync_status")
+  lastSyncError   String?      @map("last_sync_error")
+  syncedCount     Int          @default(0) @map("synced_count")
+  isActive        Boolean      @default(true) @map("is_active")
+  createdById     String       @map("created_by_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  syncLogs        SyncLog[]
+
+  @@index([sourceType])
+  @@index([isActive])
+  @@map("sync_sources")
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCING
+  SUCCESS
+  FAILED
+}
+
+model SyncLog {
+  id            String     @id @default(cuid())
+  syncSourceId  String     @map("sync_source_id")
+  status        SyncStatus
+  recordsFound  Int        @default(0) @map("records_found")
+  recordsCreated Int       @default(0) @map("records_created")
+  recordsUpdated Int       @default(0) @map("records_updated")
+  recordsSkipped Int       @default(0) @map("records_skipped")
+  errors        Json?      // Array of error messages
+  startedAt     DateTime   @map("started_at")
+  completedAt   DateTime?  @map("completed_at")
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  syncSource    SyncSource @relation(fields: [syncSourceId], references: [id], onDelete: Cascade)
+
+  @@index([syncSourceId])
+  @@index([createdAt])
+  @@map("sync_logs")
 }
 
 // ============================================

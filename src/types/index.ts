@@ -130,6 +130,8 @@ export type MainCategory = typeof MAIN_CATEGORIES[number];
 export type PriceType = 'FIXED' | 'HOURLY' | 'PER_SESSION' | 'MONTHLY' | 'CONTACT' | 'FREE';
 export type Gender = 'MALE' | 'FEMALE' | 'ALL';
 export type ListingStatus = 'DRAFT' | 'PENDING' | 'ACTIVE' | 'ARCHIVED' | 'REJECTED';
+export type SourceType = 'MANUAL' | 'CSV_IMPORT' | 'GOOGLE_SHEETS' | 'WHATSAPP';
+export type SyncStatus = 'PENDING' | 'SYNCING' | 'SUCCESS' | 'FAILED';
 
 export interface Listing {
   id: string;
@@ -160,6 +162,17 @@ export interface Listing {
   viewCount: number;
   createdAt: Date;
   updatedAt: Date;
+  // Ingestion pipeline fields
+  sourceType: SourceType;
+  sourceId?: string;
+  sourceUrl?: string;
+  lastSyncedAt?: Date;
+  syncEnabled: boolean;
+  reviewNotes?: string;
+  submittedAt?: Date;
+  reviewedAt?: Date;
+  reviewedBy?: string;
+  // Relations
   images?: ListingImage[];
   provider?: Provider;
   category?: Category;
@@ -384,6 +397,61 @@ export const SUBSIDIES = [
 ] as const;
 
 export type Subsidy = typeof SUBSIDIES[number];
+
+// ============================================
+// SYNC SOURCE TYPES
+// ============================================
+
+export interface SyncSource {
+  id: string;
+  name: string;
+  sourceType: SourceType;
+  sourceUrl: string;
+  columnMapping?: ColumnMapping;
+  syncSchedule?: string;
+  lastSyncedAt?: Date;
+  lastSyncStatus: SyncStatus;
+  lastSyncError?: string;
+  syncedCount: number;
+  isActive: boolean;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  syncLogs?: SyncLog[];
+}
+
+export interface SyncLog {
+  id: string;
+  syncSourceId: string;
+  status: SyncStatus;
+  recordsFound: number;
+  recordsCreated: number;
+  recordsUpdated: number;
+  recordsSkipped: number;
+  errors?: string[];
+  startedAt: Date;
+  completedAt?: Date;
+  createdAt: Date;
+}
+
+export interface ColumnMapping {
+  title?: string;
+  titleHe?: string;
+  description?: string;
+  descriptionHe?: string;
+  category?: string;
+  price?: string;
+  priceType?: string;
+  phone?: string;
+  email?: string;
+  location?: string;
+  neighborhood?: string;
+  ageMin?: string;
+  ageMax?: string;
+  gender?: string;
+  language?: string;
+  [key: string]: string | undefined;
+}
 
 // ============================================
 // WHATSAPP IMPORT TYPES

@@ -1,6 +1,13 @@
-import { Listing } from '@/types'
+import { Listing, SourceType } from '@/types'
 
-export const listings: Listing[] = [
+// Default ingestion fields for existing mock data
+const defaultIngestionFields = {
+  sourceType: 'MANUAL' as SourceType,
+  syncEnabled: false,
+}
+
+// Raw listings data (without ingestion defaults)
+const rawListings: Omit<Listing, 'sourceType' | 'syncEnabled'>[] = [
   // Sports
   {
     id: 'list-1',
@@ -610,6 +617,12 @@ export const listings: Listing[] = [
     ],
   },
 ]
+
+// Apply default ingestion fields to all listings
+export const listings: Listing[] = rawListings.map(listing => ({
+  ...listing,
+  ...defaultIngestionFields,
+}))
 
 // Helper functions
 export const getListingById = (id: string): Listing | undefined => {
