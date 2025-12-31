@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { Upload, FileText, X, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -14,6 +15,9 @@ interface WhatsAppUploadProps {
 }
 
 export function WhatsAppUpload({ onUpload, className }: WhatsAppUploadProps) {
+  const t = useTranslations('admin.imports')
+  const tUpload = useTranslations('admin.upload')
+  const locale = useLocale()
   const [isDragging, setIsDragging] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
@@ -39,12 +43,12 @@ export function WhatsAppUpload({ onUpload, className }: WhatsAppUploadProps) {
     try {
       // Validate file type
       if (!selectedFile.name.endsWith('.txt')) {
-        throw new Error('יש להעלות קובץ טקסט (.txt) בלבד')
+        throw new Error(tUpload('invalidFileType'))
       }
 
       // Validate file size (max 10MB)
       if (selectedFile.size > 10 * 1024 * 1024) {
-        throw new Error('הקובץ גדול מדי. גודל מקסימלי: 10MB')
+        throw new Error(tUpload('fileTooLarge'))
       }
 
       // Read file content
@@ -52,20 +56,20 @@ export function WhatsAppUpload({ onUpload, className }: WhatsAppUploadProps) {
 
       // Validate WhatsApp format
       if (!isValidWhatsAppExport(content)) {
-        throw new Error('הקובץ אינו נראה כייצוא של וואטסאפ. ודא שהקובץ הוא ייצוא צ\'אט מוואטסאפ.')
+        throw new Error(tUpload('invalidWhatsAppFormat'))
       }
 
       // Parse the file
       const result = parseWhatsAppExport(content)
 
       if (!result.success) {
-        throw new Error('שגיאה בניתוח הקובץ')
+        throw new Error(tUpload('parseError'))
       }
 
       setFile(selectedFile)
       setParseResult(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה לא ידועה')
+      setError(err instanceof Error ? err.message : tUpload('unknownError'))
       setFile(null)
     } finally {
       setIsProcessing(false)
@@ -133,7 +137,7 @@ export function WhatsAppUpload({ onUpload, className }: WhatsAppUploadProps) {
         {isProcessing ? (
           <div className="space-y-2">
             <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mx-auto" />
-            <p className="text-muted-foreground">מעבד את הקובץ...</p>
+            <p className="text-muted-foreground">{t('processing')}</p>
           </div>
         ) : file ? (
           <div className="space-y-2">
@@ -148,15 +152,15 @@ export function WhatsAppUpload({ onUpload, className }: WhatsAppUploadProps) {
             <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
             <p className="text-destructive font-medium">{error}</p>
             <Button variant="outline" size="sm" onClick={handleClear}>
-              נסה שוב
+              {tUpload('tryAgain')}
             </Button>
           </div>
         ) : (
           <div className="space-y-2">
             <Upload className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="font-medium">גרור קובץ לכאן או לחץ לבחירה</p>
+            <p className="font-medium">{t('dragAndDrop')}</p>
             <p className="text-sm text-muted-foreground">
-              קובץ .txt מייצוא וואטסאפ (עד 10MB)
+              {t('supportedFormats')}
             </p>
           </div>
         )}
@@ -168,10 +172,10 @@ export function WhatsAppUpload({ onUpload, className }: WhatsAppUploadProps) {
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-semibold mb-2">תצוגה מקדימה</h3>
+                <h3 className="font-semibold mb-2">{t('previewTitle')}</h3>
                 {parseResult?.groupName && (
                   <p className="text-sm text-muted-foreground mb-2">
-                    קבוצה: {parseResult.groupName}
+                    {tUpload('group')}: {parseResult.groupName}
                   </p>
                 )}
               </div>
@@ -183,29 +187,29 @@ export function WhatsAppUpload({ onUpload, className }: WhatsAppUploadProps) {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
               <div className="text-center p-3 bg-muted rounded-lg">
                 <div className="text-2xl font-bold">{stats.totalMessages}</div>
-                <div className="text-xs text-muted-foreground">הודעות</div>
+                <div className="text-xs text-muted-foreground">{tUpload('messages')}</div>
               </div>
               <div className="text-center p-3 bg-muted rounded-lg">
                 <div className="text-2xl font-bold">{stats.uniqueSenders}</div>
-                <div className="text-xs text-muted-foreground">משתתפים</div>
+                <div className="text-xs text-muted-foreground">{tUpload('participants')}</div>
               </div>
               <div className="text-center p-3 bg-muted rounded-lg">
                 <div className="text-2xl font-bold">
-                  {stats.dateRange.start.toLocaleDateString('he-IL')}
+                  {stats.dateRange.start.toLocaleDateString(locale === 'he' ? 'he-IL' : 'en-US')}
                 </div>
-                <div className="text-xs text-muted-foreground">מתאריך</div>
+                <div className="text-xs text-muted-foreground">{tUpload('fromDate')}</div>
               </div>
               <div className="text-center p-3 bg-muted rounded-lg">
                 <div className="text-2xl font-bold">
-                  {stats.dateRange.end.toLocaleDateString('he-IL')}
+                  {stats.dateRange.end.toLocaleDateString(locale === 'he' ? 'he-IL' : 'en-US')}
                 </div>
-                <div className="text-xs text-muted-foreground">עד תאריך</div>
+                <div className="text-xs text-muted-foreground">{tUpload('toDate')}</div>
               </div>
             </div>
 
             {stats.topSenders.length > 0 && (
               <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2">שולחים מובילים:</h4>
+                <h4 className="text-sm font-medium mb-2">{tUpload('topSenders')}:</h4>
                 <div className="flex flex-wrap gap-2">
                   {stats.topSenders.slice(0, 5).map(sender => (
                     <span
@@ -221,8 +225,8 @@ export function WhatsAppUpload({ onUpload, className }: WhatsAppUploadProps) {
 
             <div className="mt-4 flex justify-end">
               <Button onClick={handleSubmit}>
-                <FileText className="h-4 w-4 ml-2" />
-                התחל ניתוח
+                <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {tUpload('startAnalysis')}
               </Button>
             </div>
           </CardContent>

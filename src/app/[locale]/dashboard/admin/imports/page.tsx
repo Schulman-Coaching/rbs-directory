@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Upload, FileText, CheckCircle, Clock, AlertTriangle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { WhatsAppUpload } from '@/components/admin/whatsapp-upload'
@@ -9,6 +10,7 @@ import { whatsappImports, getImportStats } from '@/lib/mock-data/whatsapp-import
 import type { ParseResult } from '@/types/whatsapp'
 
 export default function AdminImportsPage() {
+  const t = useTranslations('admin')
   const [imports, setImports] = useState(whatsappImports)
   const stats = getImportStats()
 
@@ -73,9 +75,9 @@ export default function AdminImportsPage() {
     <div className="p-6 space-y-6 max-w-6xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">ייבוא וואטסאפ</h1>
+        <h1 className="text-2xl font-bold">{t('imports.title')}</h1>
         <p className="text-muted-foreground">
-          העלה קבצי ייצוא מקבוצות וואטסאפ לניתוח אוטומטי
+          {t('imports.subtitle')}
         </p>
       </div>
 
@@ -89,7 +91,7 @@ export default function AdminImportsPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold">{stats.total}</div>
-                <div className="text-sm text-muted-foreground">סה״כ ייבואים</div>
+                <div className="text-sm text-muted-foreground">{t('imports.totalImports')}</div>
               </div>
             </div>
           </CardContent>
@@ -103,7 +105,7 @@ export default function AdminImportsPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold">{stats.totalEntities}</div>
-                <div className="text-sm text-muted-foreground">ישויות שחולצו</div>
+                <div className="text-sm text-muted-foreground">{t('imports.entitiesExtracted')}</div>
               </div>
             </div>
           </CardContent>
@@ -117,7 +119,7 @@ export default function AdminImportsPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold">{stats.pendingReview}</div>
-                <div className="text-sm text-muted-foreground">ממתינים לאישור</div>
+                <div className="text-sm text-muted-foreground">{t('imports.pendingReview')}</div>
               </div>
             </div>
           </CardContent>
@@ -131,7 +133,7 @@ export default function AdminImportsPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold">{stats.totalMessages.toLocaleString()}</div>
-                <div className="text-sm text-muted-foreground">הודעות נותחו</div>
+                <div className="text-sm text-muted-foreground">{t('imports.messagesAnalyzed')}</div>
               </div>
             </div>
           </CardContent>
@@ -143,10 +145,10 @@ export default function AdminImportsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            העלאת קובץ חדש
+            {t('imports.uploadNew')}
           </CardTitle>
           <CardDescription>
-            העלה קובץ ייצוא מוואטסאפ (.txt) לניתוח אוטומטי. המערכת תחלץ אזכורי ספקים, המלצות, פרטי קשר ובקשות שירות.
+            {t('imports.uploadDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,9 +159,9 @@ export default function AdminImportsPage() {
       {/* Import History */}
       <Card>
         <CardHeader>
-          <CardTitle>היסטוריית ייבואים</CardTitle>
+          <CardTitle>{t('imports.importHistory')}</CardTitle>
           <CardDescription>
-            כל הקבצים שיובאו למערכת
+            {t('imports.allImports')}
           </CardDescription>
         </CardHeader>
         <CardContent>
